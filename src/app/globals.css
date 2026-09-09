@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b3d2e;
+  --foreground: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-outfit);
+}
+
+html,
+body {
+  min-height: 100%;
+  color: #ffffff;
+  background-color: #050807;
+  background-image: linear-gradient(180deg, #0b3d2e 0%, #061510 48%, #000000 100%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgb(34 139 34 / 0.45);
+  color: #ffffff;
+}

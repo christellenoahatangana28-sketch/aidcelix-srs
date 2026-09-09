@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AIDCELIX">
+  <rect width="64" height="64" rx="16" fill="#0B3A4D"/>
+  <path d="M18 46 L32 16 L46 46" fill="none" stroke="#0F9B8E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M24 36 H40" fill="none" stroke="#F7FAF9" stroke-width="5" stroke-linecap="round"/>
+  <path d="M31 36 V42" fill="none" stroke="#F7FAF9" stroke-width="5" stroke-linecap="round"/>
+  <path d="M22 50 C26 46 30 54 34 50 C37 47 40 47 44 50" fill="none" stroke="#C6A15B" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
