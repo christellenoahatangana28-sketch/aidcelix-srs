@@ -1,4 +1,4 @@
-import { COUNTRY } from "@/data/catalog";
+import { COUNTRY } from "@/lib/country";
 import type { PaymentMethod, PaymentProvider, PaymentSession } from "@/lib/providers/types";
 
 const COLLECT_TO = process.env.AIDCELIX_MOMO_MSISDN ?? "674246887";

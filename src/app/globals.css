@@ -20,7 +20,41 @@ body {
   background-attachment: fixed;
 }
 
+select option {
+  color: #0b1220;
+  background-color: #ffffff;
+}
+
 ::selection {
   background: rgb(34 139 34 / 0.45);
   color: #ffffff;
+}
+
+button,
+a,
+[data-press] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button:not(:disabled):active,
+a[data-press]:active,
+a.rounded-xl:active,
+a.rounded-lg:active,
+a.rounded-2xl:active,
+a.rounded-full:active {
+  transform: scale(0.95);
+  filter: brightness(0.75);
+}
+
+a {
+  transition: transform 100ms ease, filter 100ms ease, background-color 150ms ease, color 150ms ease,
+    border-color 150ms ease;
+}
+
+/* Keep compile/runtime errors; hide the idle Next.js activity chip. */
+[data-next-mark],
+[data-nextjs-dev-overlay-button],
+[data-nextjs-toast]:not([data-nextjs-errors]) {
+  display: none !important;
 }

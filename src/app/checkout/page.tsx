@@ -2,28 +2,33 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { pharmacies } from "@/data/catalog";
-import { COUNTRY } from "@/data/catalog";
+import { COUNTRY } from "@/lib/country";
 import { formatMoney } from "@/lib/format";
 import { getDeliveryProvider } from "@/lib/providers";
-import { platformFeeFromBase } from "@/lib/pricing";
-import { getPricingProvider } from "@/lib/providers";
-import { saveOrder, type StoredOrder } from "@/lib/orders";
+import { getPharmacy } from "@/lib/catalog-query";
+import { placeOrder } from "@/lib/orders";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useCart } from "@/components/cart/cart-provider";
 import { useLocation } from "@/components/location/location-provider";
+import type { Pharmacy } from "@/data/catalog";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
+import { useI18n } from "@/components/i18n";
 
 export default function CheckoutPage() {
-  const { user, ready } = useAuth();
+  const { user, ready, updateProfile } = useAuth();
   const { items, clear } = useCart();
   const { coords, label } = useLocation();
   const router = useRouter();
+  const { notify } = useToast();
+  const { t, tx, errorMessage } = useI18n();
   const [address, setAddress] = useState(user?.address ?? "");
+  const [pharmacy, setPharmacy] = useState<(Pharmacy & { distanceKm: number }) | null>(null);
   const [fee, setFee] = useState<number | null>(null);
   const [eta, setEta] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const pharmacy = pharmacies.find((item) => item.id === items[0]?.pharmacyId);
   const medTotal = items.reduce((sum, item) => sum + item.aidcelixPrice * item.quantity, 0);
 
   useEffect(() => {
@@ -33,6 +38,12 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (user?.address) setAddress(user.address);
   }, [user]);
+
+  useEffect(() => {
+    const slug = items[0]?.pharmacyId;
+    if (!slug) return;
+    getPharmacy(slug, coords).then(setPharmacy);
+  }, [items, coords]);
 
   useEffect(() => {
     async function quote() {
@@ -48,65 +59,50 @@ export default function CheckoutPage() {
     quote();
   }, [pharmacy, coords, items]);
 
-  async function placeOrder() {
+  async function onPlaceOrder() {
     if (!user || !pharmacy || !coords || fee === null) return;
-    setError("");
-    const lines = [];
-    for (const item of items) {
-      const internal = await getPricingProvider().getInternalPrice(item.id);
-      const qty = item.quantity;
-      const pharmacyDue = (internal?.medindexBase ?? item.aidcelixPrice) * qty;
-      const platformFee = internal
-        ? platformFeeFromBase(internal.medindexBase, qty)
-        : item.aidcelixPrice * qty * 0.02;
-      lines.push({
-        id: item.id,
-        name: item.name,
-        quantity: qty,
-        aidcelixPrice: item.aidcelixPrice,
-        platformFee,
-        pharmacyDue,
-      });
+    const dropoff = address.trim();
+    if (!dropoff) {
+      setError(t.enterDeliveryAddress);
+      return;
     }
-    const order: StoredOrder = {
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      status: "pending_payment",
-      pharmacyId: pharmacy.id,
-      pharmacyName: pharmacy.name,
-      pickup: { lat: pharmacy.lat, lng: pharmacy.lng, label: pharmacy.name },
-      dropoff: {
-        lat: coords.lat,
-        lng: coords.lng,
-        label: address || label,
-        contact: user.phone,
-      },
-      items: lines,
-      medTotal,
-      platformFee: lines.reduce((sum, line) => sum + line.platformFee, 0),
-      pharmacyDue: lines.reduce((sum, line) => sum + line.pharmacyDue, 0),
-      deliveryFee: fee,
-      grandTotal: medTotal + fee,
-      currency: COUNTRY.currency,
-    };
-    saveOrder(order);
-    clear();
-    router.push(`/pay/${order.id}`);
+    setError("");
+    setBusy(true);
+    try {
+      const orderId = await placeOrder({
+        pharmacySlug: pharmacy.id,
+        items: items.map((item) => ({ slug: item.id, quantity: item.quantity })),
+        dropoffLabel: dropoff,
+        dropoffLat: coords.lat,
+        dropoffLng: coords.lng,
+        dropoffContact: user.phone,
+      });
+      await updateProfile({ address: dropoff });
+      clear();
+      notify(t.orderPlaced);
+      router.push(`/pay/${orderId}`);
+    } catch (err) {
+      setError(errorMessage(err, "couldNotPlaceOrder"));
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (!items.length) {
-    return <div className="px-6 py-16 text-gray-400">Your cart is empty.</div>;
+    return <div className="px-6 py-16 text-gray-400">{t.cartEmpty}</div>;
   }
 
   return (
     <div className="mx-auto max-w-xl px-6 py-10">
-      <h1 className="text-3xl font-bold text-white">Review command</h1>
-      <p className="mt-2 text-sm text-gray-400">Pickup: {pharmacy?.name}</p>
+      <h1 className="text-3xl font-bold text-white">{t.reviewCommand}</h1>
+      <p className="mt-2 text-sm text-gray-400">{tx("pickup", { name: pharmacy?.name ?? "" })}</p>
       <label className="mt-6 block text-sm text-gray-400">
-        Delivery address
+        {t.deliveryAddress}
         <input
+          required
           value={address}
           onChange={(event) => setAddress(event.target.value)}
+          placeholder={label || t.addressPlaceholder}
           className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-white"
         />
       </label>
@@ -122,27 +118,22 @@ export default function CheckoutPage() {
       </ul>
       <div className="mt-6 space-y-2 border-t border-white/10 pt-4 text-sm">
         <p className="flex justify-between text-gray-300">
-          <span>Medications (AIDCELIX)</span>
+          <span>{t.medicationsAidcelix}</span>
           <span>{formatMoney(medTotal, COUNTRY.currency)}</span>
         </p>
         <p className="flex justify-between text-gray-300">
-          <span>Gozem delivery {eta ? `· ~${eta} min` : ""}</span>
+          <span>{eta ? tx("deliveryEta", { eta }) : t.deliveryNoEta}</span>
           <span>{fee === null ? "…" : formatMoney(fee, COUNTRY.currency)}</span>
         </p>
         <p className="flex justify-between text-lg font-bold text-white">
-          <span>Total</span>
+          <span>{t.total}</span>
           <span>{fee === null ? "…" : formatMoney(medTotal + fee, COUNTRY.currency)}</span>
         </p>
       </div>
       {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
-      <button
-        type="button"
-        disabled={fee === null}
-        onClick={placeOrder}
-        className="mt-6 w-full rounded-xl bg-emerald-500 py-3 font-bold text-black hover:bg-emerald-400 disabled:opacity-40"
-      >
-        Confirm and pay
-      </button>
+      <Button type="button" size="lg" className="mt-6" disabled={fee === null || !address.trim()} busy={busy} onClick={onPlaceOrder}>
+        {busy ? t.placingOrder : t.confirmAndPay}
+      </Button>
     </div>
   );
 }

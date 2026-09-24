@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useI18n } from "@/components/i18n";
 
 const SLIDES = [
   { src: "/hero/pharmacy.jpg", alt: "Pharmacy shelves" },
@@ -12,6 +13,7 @@ const SLIDES = [
 const INTERVAL_MS = 5000;
 
 export function HeroSlideshow() {
+  const { tx } = useI18n();
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -40,9 +42,9 @@ export function HeroSlideshow() {
           <button
             key={slide.src}
             type="button"
-            aria-label={`Show slide ${i + 1}`}
+            aria-label={tx("showSlide", { n: i + 1 })}
             onClick={() => setIndex(i)}
-            className={`h-2 rounded-full transition-all ${
+            className={`h-2 rounded-full transition-all active:scale-90 ${
               i === index ? "w-8 bg-white" : "w-2 bg-white/40"
             }`}
           />

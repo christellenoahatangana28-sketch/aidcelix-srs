@@ -1,6 +1,6 @@
 import { haversineKm, type GeoPoint } from "@/lib/geo";
 import type { DeliveryAck, DeliveryProvider, DeliveryStatus } from "@/lib/providers/types";
-import { COUNTRY } from "@/data/catalog";
+import { COUNTRY } from "@/lib/country";
 
 const STATUS_FLOW: DeliveryStatus[] = [
   "order_received",

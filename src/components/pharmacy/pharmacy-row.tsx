@@ -3,6 +3,7 @@
 import { Clock, MapPin, Phone, Star } from "lucide-react";
 import { formatDistance } from "@/lib/geo";
 import type { NearbyPharmacy } from "@/lib/catalog-query";
+import { Button } from "@/components/ui/button";
 import { useI18n } from "@/components/i18n";
 
 export function PharmacyRow({
@@ -37,13 +38,9 @@ export function PharmacyRow({
           </span>
         </p>
       </div>
-      <button
-        type="button"
-        onClick={onOrder}
-        className="rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-black hover:bg-emerald-400"
-      >
+      <Button type="button" onClick={onOrder} className="shrink-0">
         {t.orderHere}
-      </button>
+      </Button>
     </article>
   );
 }

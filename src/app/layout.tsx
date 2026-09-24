@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 import { Outfit } from "next/font/google";
 import { AppProviders } from "@/components/providers";
 import "./globals.css";
@@ -19,11 +20,13 @@ export const viewport: Viewport = {
   themeColor: "#0b3d2e",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("aidcelix.locale")?.value === "fr" ? "fr" : "en";
   return (
-    <html lang="en" className={`${outfit.variable} h-full`}>
+    <html lang={locale} className={`${outfit.variable} h-full`}>
       <body className="flex min-h-full flex-col font-[family-name:var(--font-outfit)] text-white antialiased">
-        <AppProviders>{children}</AppProviders>
+        <AppProviders initialLocale={locale}>{children}</AppProviders>
       </body>
     </html>
   );
